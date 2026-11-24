@@ -3,105 +3,351 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Socio-Economic Demographics &amp; Real Estate Investment Analytics</title>
+  <title>Socio-Economic &amp; Real Estate Analytics Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="dashboard-data.js"></script>
   <style>
     :root {
       --bg: #0b1120;
       --surface: #111827;
       --card: #1e293b;
+      --card-hover: #263449;
       --border: #334155;
       --text: #f1f5f9;
       --muted: #94a3b8;
       --accent: #38bdf8;
       --accent-2: #34d399;
+      --accent-3: #fbbf24;
+      --danger: #f87171;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --card: #ffffff;
+      --card-hover: #f1f5f9;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #0284c7;
+      --accent-2: #059669;
+      --accent-3: #d97706;
+      --danger: #dc2626;
+      --shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.6;
+      line-height: 1.55;
+      transition: background 0.2s ease, color 0.2s ease;
     }
-    header {
-      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
-      padding: 4rem 1.5rem 3rem;
-      text-align: center;
+      padding: 0.85rem 1.5rem;
     }
-    header h1 {
-      font-size: clamp(1.9rem, 4vw, 2.8rem);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      margin-bottom: 0.75rem;
+    [data-theme="light"] .topbar {
+      background: rgba(255, 255, 255, 0.92);
     }
-    header p {
-      color: var(--muted);
-      max-width: 760px;
-      margin: 0 auto 1.5rem;
-      font-size: 1.05rem;
-    }
-    .badges { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
-    .badge {
-      background: rgba(56, 189, 248, 0.14);
-      color: var(--accent);
-      border: 1px solid rgba(56, 189, 248, 0.35);
-      padding: 0.3rem 0.75rem;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-    main { max-width: 1120px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    .topbar-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 1rem;
-      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
     }
-    .kpi {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.25rem;
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
     }
-    .kpi .value { font-size: 1.75rem; font-weight: 800; color: var(--accent); }
-    .kpi .label { font-size: 0.88rem; color: var(--muted); margin-top: 0.25rem; }
-    section { margin-bottom: 3rem; }
-    section h2 {
-      font-size: 1.6rem;
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid var(--border);
-      color: var(--accent-2);
+    .brand-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 12px var(--accent);
     }
-    .tabs { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-    .tab-btn {
-      background: var(--card);
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 0.6rem 1.2rem;
+    .nav-tabs {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+    .nav-btn {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid transparent;
+      padding: 0.45rem 0.95rem;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
+      font-size: 0.88rem;
       transition: all 0.15s ease;
     }
-    .tab-btn.active, .tab-btn:hover {
+    .nav-btn:hover { color: var(--text); background: var(--card); }
+    .nav-btn.active {
       background: var(--accent);
       color: #0b1120;
       border-color: var(--accent);
     }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-    .fig-grid {
+    [data-theme="light"] .nav-btn.active { color: #ffffff; }
+    .theme-btn {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.42rem 0.8rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1.75rem 1.5rem 4rem;
+    }
+    .hero {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(52, 211, 153, 0.08));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .hero h1 {
+      font-size: clamp(1.5rem, 3vw, 2.15rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.4rem;
+    }
+    .hero p { color: var(--muted); max-width: 740px; font-size: 0.96rem; }
+    .pill-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+    .pill {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--accent);
+    }
+    .panel { display: none; animation: fadeIn 0.2s ease; }
+    .panel.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .kpi {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.15rem 1.25rem;
+      box-shadow: var(--shadow);
+    }
+    .kpi-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+    .kpi-val { font-size: 1.65rem; font-weight: 800; margin-top: 0.25rem; color: var(--accent); }
+    .kpi-sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+    .kpi-val.green { color: var(--accent-2); }
+    .kpi-val.amber { color: var(--accent-3); }
+
+    .grid-2 {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
       gap: 1.25rem;
+      margin-bottom: 1.25rem;
     }
-    figure {
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.35rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.25rem;
+    }
+    .grid-2 .card { margin-bottom: 0; }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .card-title { font-size: 1.05rem; font-weight: 700; }
+    .card-sub { font-size: 0.84rem; color: var(--muted); }
+
+    .btn-group { display: inline-flex; gap: 0.35rem; flex-wrap: wrap; }
+    .chip-btn {
+      background: var(--surface);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.75rem;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .chip-btn.active {
+      background: var(--accent);
+      color: #0b1120;
+      border-color: var(--accent);
+    }
+    [data-theme="light"] .chip-btn.active { color: #ffffff; }
+
+    .filter-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 0.85rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1.25rem;
+      align-items: end;
+    }
+    .filter-group label {
+      display: block;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.35rem;
+    }
+    select, input[type="text"] {
+      width: 100%;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.7rem;
+      font-size: 0.88rem;
+      outline: none;
+    }
+    select:focus, input[type="text"]:focus { border-color: var(--accent); }
+    .reset-btn {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 0.5rem 0.9rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.86rem;
+    }
+    .reset-btn:hover { background: rgba(56, 189, 248, 0.14); }
+
+    .chart-wrap { position: relative; height: 320px; width: 100%; }
+    .chart-wrap.tall { height: 360px; }
+
+    /* Heatmap table */
+    .heatmap-wrap { overflow-x: auto; }
+    table.heatmap {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 4px;
+      font-size: 0.84rem;
+    }
+    table.heatmap th {
+      text-align: center;
+      padding: 0.5rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    table.heatmap th.row-h { text-align: left; white-space: nowrap; }
+    table.heatmap td {
+      text-align: center;
+      padding: 0.55rem 0.45rem;
+      border-radius: 6px;
+      font-weight: 700;
+      transition: transform 0.12s ease;
+    }
+    table.heatmap td:hover { transform: scale(1.04); }
+
+    /* Developer data table */
+    .table-wrap { overflow-x: auto; max-height: 430px; overflow-y: auto; }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+    }
+    table.data-table th {
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      padding: 0.65rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    table.data-table th:hover { color: var(--accent); }
+    table.data-table td {
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    }
+    table.data-table tr:hover td { background: rgba(56, 189, 248, 0.06); }
+    .tier-badge {
+      display: inline-block;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 700;
+    }
+    .tier-Luxury { background: rgba(251, 191, 36, 0.18); color: #fbbf24; }
+    .tier-Premium { background: rgba(56, 189, 248, 0.18); color: #38bdf8; }
+    .tier-Mid-Segment { background: rgba(52, 211, 153, 0.18); color: #34d399; }
+    .tier-Affordable { background: rgba(167, 139, 250, 0.18); color: #a78bfa; }
+
+    /* Persona Matcher */
+    .matcher-output {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .matcher-box {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      overflow: hidden;
-      padding: 1rem;
+      padding: 1.1rem;
+    }
+    .matcher-box h4 { font-size: 0.85rem; color: var(--accent-2); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; }
+    .matcher-box .big { font-size: 1.35rem; font-weight: 800; margin-bottom: 0.35rem; }
+    .matcher-box p { font-size: 0.86rem; color: var(--muted); }
+
+    /* Gallery */
+    .fig-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+      gap: 1.2rem;
+    }
+    figure {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.9rem;
     }
     figure img {
       width: 100%;
@@ -110,132 +356,844 @@
       background: #ffffff;
       display: block;
     }
-    figcaption {
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin-top: 0.75rem;
-    }
+    figcaption { font-size: 0.84rem; color: var(--muted); margin-top: 0.65rem; }
+
     footer {
       text-align: center;
       padding: 2rem 1rem;
       border-top: 1px solid var(--border);
       color: var(--muted);
-      font-size: 0.9rem;
+      font-size: 0.86rem;
     }
-    @media (max-width: 600px) {
-      .fig-grid { grid-template-columns: 1fr; }
+    @media (max-width: 640px) {
+      .grid-2, .fig-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Socio-Economic Demographics &amp; Real Estate Investment Analytics</h1>
-    <p>
-      An end-to-end, vectorized Python analytics project connecting Adult Census socio-economic
-      patterns (48,843 records) with Mumbai &amp; Thane real estate investment intelligence (12,655 listings).
-    </p>
-    <div class="badges">
-      <span class="badge">Python 3.10+</span>
-      <span class="badge">Pandas &amp; SciPy</span>
-      <span class="badge">Statsmodels</span>
-      <span class="badge">Vectorized ETL</span>
-      <span class="badge">By Rajath Gadagkar</span>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <span>Socio-Economic &amp; Real Estate Analytics</span>
+      </div>
+      <nav class="nav-tabs" aria-label="Dashboard sections">
+        <button class="nav-btn active" data-tab="overview">Overview &amp; Matcher</button>
+        <button class="nav-btn" data-tab="census">Adult Census Explorer</button>
+        <button class="nav-btn" data-tab="realestate">Real Estate Explorer</button>
+        <button class="nav-btn" data-tab="gallery">Research Figures</button>
+      </nav>
+      <button class="theme-btn" id="themeToggle" title="Switch light/dark theme">Light Mode</button>
     </div>
   </header>
 
   <main>
-    <div class="kpi-grid">
-      <div class="kpi">
-        <div class="value">48,843</div>
-        <div class="label">Adult Census Records Analyzed</div>
-      </div>
-      <div class="kpi">
-        <div class="value">12,655</div>
-        <div class="label">Mumbai &amp; Thane Property Listings</div>
-      </div>
-      <div class="kpi">
-        <div class="value">56.2%</div>
-        <div class="label">Thane Price/sq ft Cost Advantage</div>
-      </div>
-      <div class="kpi">
-        <div class="value">0.379 vs 0.265</div>
-        <div class="label">Logit β: Age vs. Work Hours on Capital</div>
-      </div>
-    </div>
-
-    <div class="tabs">
-      <button class="tab-btn active" onclick="showTab('census', this)">Part I: Socio-Economic Census</button>
-      <button class="tab-btn" onclick="showTab('realestate', this)">Part II: Mumbai &amp; Thane Real Estate</button>
-    </div>
-
-    <div id="census" class="tab-panel active">
-      <section>
-        <h2>Socio-Economic Drivers &amp; Capital Activity</h2>
-        <div class="fig-grid">
-          <figure>
-            <img src="figures/census_02_grouped_education.png" alt="Grouped Education Categories" />
-            <figcaption>Education consolidated from 17 sparse levels into 6 ordered attainment tiers (62.5% reduction).</figcaption>
-          </figure>
-          <figure>
-            <img src="figures/census_06_age_hours_heatmap.png" alt="Age vs Work Intensity Heatmap" />
-            <figcaption>Over 75% of Early Career, Mid Career, and Experienced adults work full-time (Cramér's V = 0.221).</figcaption>
-          </figure>
-          <figure>
-            <img src="figures/census_07_net_capital_distribution.png" alt="Net Capital Distribution" />
-            <figcaption>12.93% of individuals report capital activity; among active participants, 63.9% record net gains.</figcaption>
-          </figure>
-          <figure>
-            <img src="figures/census_08_capital_activity_comparison.png" alt="Capital Activity by Age and Work Intensity" />
-            <figcaption>Capital participation peaks at Retirement Age (24.1%) while age outweighs work hours in standardized logistic regression.</figcaption>
-          </figure>
+    <div class="hero">
+      <div>
+        <h1>Socio-Economic Demographics &amp; Real Estate Investment Intelligence</h1>
+        <p>
+          Interactive analytics dashboard unifying 48,843 Adult Census demographic records with
+          12,655 Mumbai &amp; Thane property listings. Filter markets live, inspect statistical drivers,
+          and match demographic profiles to data-backed investment strategies.
+        </p>
+        <div class="pill-row">
+          <span class="pill">48,843 Census Records</span>
+          <span class="pill">12,655 Property Listings</span>
+          <span class="pill">259 Active Developers</span>
+          <span class="pill">Author: Rajath Gadagkar</span>
         </div>
-      </section>
+      </div>
     </div>
 
-    <div id="realestate" class="tab-panel">
-      <section>
-        <h2>Mumbai &amp; Thane Real Estate Investment Intelligence</h2>
-        <div class="fig-grid">
-          <figure>
-            <img src="figures/realestate_01_price_segmentation.png" alt="Price Segmentation" />
-            <figcaption>Quantile segmentation divides listings into Budget (≤₹88L), Mid-Range (₹88L–₹200L), and Premium (&gt;₹200L).</figcaption>
-          </figure>
-          <figure>
-            <img src="figures/realestate_02_city_comparison.png" alt="Mumbai vs Thane City Comparison" />
-            <figcaption>Mumbai averages ₹28,394/sq ft vs. ₹12,437/sq ft in Thane — a 56.2% cost advantage for value investors.</figcaption>
-          </figure>
-          <figure>
-            <img src="figures/realestate_04_prime_amenities_breakdown.png" alt="Prime Location Amenities Breakdown" />
-            <figcaption>Prime Mumbai properties command a +46.1% price/sq ft premium backed by major amenity gaps (74% vs 23% pool access).</figcaption>
-          </figure>
-          <figure>
-            <img src="figures/realestate_05_value_for_money.png" alt="Value-for-Money Opportunities" />
-            <figcaption>Thane delivers a 63.9% higher median Value Score (sq ft per ₹ Lakh), led by Dombivli East and suburban Mumbai belts.</figcaption>
-          </figure>
-          <figure>
-            <img src="figures/realestate_06_amenity_price_impact.png" alt="Controlled Amenity Price Impact" />
-            <figcaption>Size-controlled price/sq ft analysis highlights Power Back Up (+44.7%), Parking (+35.1%), and Swimming Pool (+28.6%).</figcaption>
-          </figure>
-          <figure>
-            <img src="figures/realestate_08_developer_analysis.png" alt="Developer Landscape" />
-            <figcaption>259 active developers (5+ listings) segmented into Luxury, Premium, Mid-Segment, and Affordable tiers with CV consistency metrics.</figcaption>
-          </figure>
+    <!-- TAB 1: OVERVIEW & CROSS-DOMAIN PERSONA MATCHER -->
+    <section id="tab-overview" class="panel active">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-label">Census Capital Activity</div>
+          <div class="kpi-val">12.93%</div>
+          <div class="kpi-sub">6,317 active (63.9% net gains)</div>
         </div>
-      </section>
-    </div>
+        <div class="kpi">
+          <div class="kpi-label">Stronger Capital Driver</div>
+          <div class="kpi-val green">Age (β=0.379)</div>
+          <div class="kpi-sub">vs. Work Hours (β=0.265) in Logit</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Thane Cost Advantage</div>
+          <div class="kpi-val amber">56.2%</div>
+          <div class="kpi-sub">₹12,437 vs ₹28,394 / sq ft in Mumbai</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Prime Mumbai Premium</div>
+          <div class="kpi-val">+46.1%</div>
+          <div class="kpi-sub">Price/sq ft (+3.3% in Prime Thane)</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Ready-to-Move Premium</div>
+          <div class="kpi-val green">+18.1% / +13.2%</div>
+          <div class="kpi-sub">Mumbai / Thane possession certainty</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Interactive Investor Persona-to-Market Matcher</div>
+            <div class="card-sub">Select a socio-economic profile to view empirical Census capital capacity paired with recommended Mumbai &amp; Thane real estate segments.</div>
+          </div>
+        </div>
+        <div class="filter-bar" style="margin-bottom:0; padding:0.9rem;">
+          <div class="filter-group">
+            <label for="mAge">Life-Stage Age Group</label>
+            <select id="mAge"></select>
+          </div>
+          <div class="filter-group">
+            <label for="mEdu">Education Tier</label>
+            <select id="mEdu"></select>
+          </div>
+          <div class="filter-group">
+            <label for="mHours">Work Intensity</label>
+            <select id="mHours"></select>
+          </div>
+        </div>
+        <div class="matcher-output" id="matcherOutput"></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Capital Activity Rate Across Life Stages</div>
+              <div class="card-sub">Empirical participation rate peaks at Retirement Age (24.1%)</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="overviewCensusChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Mumbai vs. Thane Inventory by Price Tier</div>
+              <div class="card-sub">Budget (≤₹88L), Mid-Range (₹88L–₹200L), Premium (&gt;₹200L)</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="overviewReChart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: ADULT CENSUS EXPLORER -->
+    <section id="tab-census" class="panel">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-label">Education Consolidation</div>
+          <div class="kpi-val">17 &rarr; 6</div>
+          <div class="kpi-sub">62.5% category sparsity reduction</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Age &times; Hours Cram&eacute;r's V</div>
+          <div class="kpi-val green">0.221</div>
+          <div class="kpi-sub">Chi-Square p &lt; 1e-200 · Spearman &rho;=0.147</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Avg Active Gain / Loss</div>
+          <div class="kpi-val amber">$13,062 / -$1,873</div>
+          <div class="kpi-sub">4,035 gains vs 2,282 losses</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Kruskal-Wallis (Net Capital)</div>
+          <div class="kpi-val">H = 245.6</div>
+          <div class="kpi-sub">Across age groups (p = 2.39e-49)</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Education Attainment Distribution</div>
+              <div class="card-sub">Compare raw 17 census levels vs. 6 ordered attainment tiers</div>
+            </div>
+            <div class="btn-group" id="eduToggle">
+              <button class="chip-btn active" data-mode="grouped">Grouped (6 Tiers)</button>
+              <button class="chip-btn" data-mode="raw">Raw (17 Levels)</button>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="censusEduChart"></canvas></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Capital Performance Explorer</div>
+              <div class="card-sub">Switch dimension and metric to inspect wealth accumulation</div>
+            </div>
+            <div class="btn-group">
+              <button class="chip-btn active" data-capdim="age">By Age</button>
+              <button class="chip-btn" data-capdim="hours">By Work Hours</button>
+              <button class="chip-btn active" data-capmet="rate">Activity %</button>
+              <button class="chip-btn" data-capmet="net">Mean Net $</button>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="censusCapChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Life-Stage Age Group &times; Work Intensity Heatmap (% within Age Group)</div>
+            <div class="card-sub">Hover any cell to view exact headcount and percentage share. Over 75% of ages 25&ndash;54 work full-time.</div>
+          </div>
+        </div>
+        <div class="heatmap-wrap" id="ageHoursHeatmap"></div>
+      </div>
+    </section>
+
+    <!-- TAB 3: REAL ESTATE EXPLORER -->
+    <section id="tab-realestate" class="panel">
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label for="fCity">City</label>
+          <select id="fCity">
+            <option value="All">All Cities (Mumbai &amp; Thane)</option>
+            <option value="Mumbai">Mumbai</option>
+            <option value="Thane">Thane</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="fSeg">Price Segment</label>
+          <select id="fSeg">
+            <option value="All">All Segments</option>
+            <option value="Budget (Low)">Budget (&le; &#8377;88L)</option>
+            <option value="Mid-Range">Mid-Range (&#8377;88L&ndash;&#8377;200L)</option>
+            <option value="Premium (High)">Premium (&gt; &#8377;200L)</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="fLoc">Location Tier</label>
+          <select id="fLoc">
+            <option value="All">All Locations</option>
+            <option value="Prime">Prime Location</option>
+            <option value="Non-Prime">Non-Prime Location</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="fPoss">Possession Status</label>
+          <select id="fPoss">
+            <option value="All">All Statuses</option>
+            <option value="Ready to Move">Ready to Move</option>
+            <option value="Under Construction">Under Construction</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <button class="reset-btn" id="resetFilters">Reset Filters</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" id="reLiveKpis"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Amenity Availability (Filtered Cohort)</div>
+              <div class="card-sub">Live percentage of matching properties offering each amenity</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="reAmenityAvailChart"></canvas></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Size-Controlled Amenity Price/sq ft Impact (%)</div>
+              <div class="card-sub">Controls for apartment size &amp; bundled amenities</div>
+            </div>
+            <div class="btn-group" id="impactCityToggle">
+              <button class="chip-btn active" data-icity="All">Overall</button>
+              <button class="chip-btn" data-icity="Mumbai">Mumbai</button>
+              <button class="chip-btn" data-icity="Thane">Thane</button>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="reAmenityImpactChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Top 10 Value-for-Money Localities (Carpet Area sq ft per &#8377; Lakh)</div>
+            <div class="card-sub">Minimum 5 listings per locality; higher Value Score = more carpet area per rupee</div>
+          </div>
+          <div class="btn-group" id="areaCityToggle">
+            <button class="chip-btn active" data-acity="All">All Cities</button>
+            <button class="chip-btn" data-acity="Mumbai">Mumbai</button>
+            <button class="chip-btn" data-acity="Thane">Thane</button>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="reTopAreasChart"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Developer Intelligence Explorer (Top 80 of 259 Active Developers)</div>
+            <div class="card-sub">Click any column header to sort. Lower CV% indicates more predictable portfolio pricing.</div>
+          </div>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+            <input type="text" id="devSearch" placeholder="Search developer..." style="width:200px;" />
+            <select id="devTier" style="width:150px;">
+              <option value="All">All Tiers</option>
+              <option value="Luxury">Luxury</option>
+              <option value="Premium">Premium</option>
+              <option value="Mid-Segment">Mid-Segment</option>
+              <option value="Affordable">Affordable</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th data-sort="name">Developer</th>
+                <th data-sort="tier">Tier</th>
+                <th data-sort="count">Listings</th>
+                <th data-sort="avg_price_lakhs">Avg Price (&#8377;L)</th>
+                <th data-sort="avg_sqft_price">Avg &#8377;/sq ft</th>
+                <th data-sort="avg_carpet_sqft">Avg Area (sq ft)</th>
+                <th data-sort="price_cv_pct">Price CV (%)</th>
+                <th data-sort="pool_pct">Pool (%)</th>
+                <th data-sort="gym_pct">Gym (%)</th>
+              </tr>
+            </thead>
+            <tbody id="devTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: RESEARCH FIGURES GALLERY -->
+    <section id="tab-gallery" class="panel">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Publication-Grade Analytical Figures</div>
+            <div class="card-sub">Generated directly from the Python analytics pipeline &amp; Jupyter notebooks</div>
+          </div>
+          <div class="btn-group" id="galleryToggle">
+            <button class="chip-btn active" data-gcat="all">All (12)</button>
+            <button class="chip-btn" data-gcat="census">Adult Census (6)</button>
+            <button class="chip-btn" data-gcat="realestate">Real Estate (6)</button>
+          </div>
+        </div>
+        <div class="fig-grid" id="galleryGrid"></div>
+      </div>
+    </section>
   </main>
 
   <footer>
-    &copy; 2025&ndash;2026 Rajath Gadagkar &middot; Released under the MIT License
+    &copy; 2025&ndash;2026 Rajath Gadagkar &middot; Socio-Economic Demographics &amp; Real Estate Investment Analytics &middot; MIT License
   </footer>
 
   <script>
-    function showTab(id, btn) {
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-      btn.classList.add('active');
+    const D = window.DASHBOARD_DATA;
+    const charts = {};
+
+    function getThemeColors() {
+      const light = document.documentElement.getAttribute('data-theme') === 'light';
+      return {
+        text: light ? '#334155' : '#cbd5e1',
+        grid: light ? 'rgba(148,163,184,0.22)' : 'rgba(148,163,184,0.14)',
+        accent: light ? '#0284c7' : '#38bdf8',
+        green: light ? '#059669' : '#34d399',
+        amber: light ? '#d97706' : '#fbbf24',
+        rose: light ? '#e11d48' : '#fb7185',
+      };
     }
+
+    function makeChart(id, config) {
+      if (charts[id]) charts[id].destroy();
+      const ctx = document.getElementById(id).getContext('2d');
+      charts[id] = new Chart(ctx, config);
+    }
+
+    // ---------------- NAVIGATION & THEME ----------------
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    const themeBtn = document.getElementById('themeToggle');
+    themeBtn.addEventListener('click', () => {
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      document.documentElement.setAttribute('data-theme', isLight ? 'dark' : 'light');
+      themeBtn.textContent = isLight ? 'Light Mode' : 'Dark Mode';
+      renderAllCharts();
+    });
+
+    // ---------------- TAB 1: OVERVIEW & MATCHER ----------------
+    const mAge = document.getElementById('mAge');
+    const mEdu = document.getElementById('mEdu');
+    const mHours = document.getElementById('mHours');
+
+    D.census.capital_by_age.forEach(x => mAge.add(new Option(x.group, x.group)));
+    D.census.grouped_education.forEach(x => mEdu.add(new Option(x.label, x.label)));
+    D.census.capital_by_hours.forEach(x => mHours.add(new Option(x.group, x.group)));
+    mAge.value = 'Experienced (45-54)';
+    mEdu.value = 'Postgraduate';
+    mHours.value = 'Full-time';
+
+    function updateMatcher() {
+      const ageObj = D.census.capital_by_age.find(x => x.group === mAge.value);
+      const eduObj = D.census.capital_by_edu[mEdu.value] || { activity_rate_pct: 12.9, mean_net_capital: 990 };
+      const hrsObj = D.census.capital_by_hours.find(x => x.group === mHours.value);
+
+      // Composite investment readiness index from empirical Census metrics
+      const avgAct = ((ageObj.activity_rate_pct + eduObj.activity_rate_pct + hrsObj.activity_rate_pct) / 3).toFixed(1);
+      const avgCap = Math.round((ageObj.mean_net_capital + eduObj.mean_net_capital + hrsObj.mean_net_capital) / 3);
+
+      let tier, city, strategy, picks;
+      if (avgCap >= 1500 || avgAct >= 17) {
+        tier = 'Premium (High) · > ₹200 Lakhs';
+        city = 'Mumbai (Prime Locations)';
+        strategy = 'High capital capacity supports Prime Mumbai ready-to-move 2–3 BHK apartments with Power Back Up (+51.4%) & Swimming Pool (+36.5%) from Luxury/Premium developers.';
+        picks = 'Mumbai Prime: Oberoi Realty, Bombay Realty, Lodha, Rustomjee';
+      } else if (avgCap >= 700 || avgAct >= 11) {
+        tier = 'Mid-Range · ₹88L – ₹200 Lakhs';
+        city = 'Prime Thane or Suburban Mumbai';
+        strategy = 'Balanced risk-return profile fits Prime Thane (only +3.3% location premium over non-prime) or Mid-Range Mumbai family homes with steady appreciation.';
+        picks = 'Thane Prime & Mumbai Suburbs: Hiranandani, Kalpataru, Runwal, Godrej';
+      } else {
+        tier = 'Budget (Low) · ≤ ₹88 Lakhs';
+        city = 'Thane & Extended Mumbai Value Belts';
+        strategy = 'Maximize carpet area per rupee (56.2% per-sq-ft savings in Thane). Focus on 1–2 BHK apartments with Value Score > 6.1 sq ft/₹ Lakh.';
+        picks = 'High-Value Localities: Dombivli East, Nalasopara West, Vasai East, Kalyan East';
+      }
+
+      document.getElementById('matcherOutput').innerHTML = `
+        <div class="matcher-box">
+          <h4>Empirical Census Capacity</h4>
+          <div class="big">${avgAct}% Activity &middot; $${avgCap.toLocaleString()} Net</div>
+          <p>
+            <strong>${ageObj.group}:</strong> ${ageObj.activity_rate_pct}% active ($${ageObj.mean_net_capital.toLocaleString()} mean)<br/>
+            <strong>${mEdu.value}:</strong> ${eduObj.activity_rate_pct}% active ($${eduObj.mean_net_capital.toLocaleString()} mean)<br/>
+            <strong>${hrsObj.group}:</strong> ${hrsObj.activity_rate_pct}% active ($${hrsObj.mean_net_capital.toLocaleString()} mean)
+          </p>
+        </div>
+        <div class="matcher-box">
+          <h4>Matched Real Estate Segment</h4>
+          <div class="big">${tier}</div>
+          <p><strong>Target Market:</strong> ${city}<br/>${strategy}</p>
+        </div>
+        <div class="matcher-box">
+          <h4>Actionable Focus Areas</h4>
+          <div class="big" style="font-size:1.05rem;">${picks}</div>
+          <p>Cross-domain mapping connects life-cycle capital accumulation directly to Mumbai &amp; Thane pricing efficiency.</p>
+        </div>
+      `;
+    }
+    [mAge, mEdu, mHours].forEach(el => el.addEventListener('change', updateMatcher));
+    updateMatcher();
+
+    function renderOverviewCharts() {
+      const c = getThemeColors();
+      makeChart('overviewCensusChart', {
+        type: 'bar',
+        data: {
+          labels: D.census.capital_by_age.map(x => x.group.replace(/ \(.+\)/, '')),
+          datasets: [{
+            label: 'Capital Activity Rate (%)',
+            data: D.census.capital_by_age.map(x => x.activity_rate_pct),
+            backgroundColor: c.accent,
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: c.text }, grid: { display: false } },
+            y: { ticks: { color: c.text, callback: v => v + '%' }, grid: { color: c.grid } }
+          }
+        }
+      });
+
+      const segs = ['Budget (Low)', 'Mid-Range', 'Premium (High)'];
+      const countFor = (city, seg) => D.realestate.cube
+        .filter(b => b.city === city && b.seg === seg)
+        .reduce((s, b) => s + b.count, 0);
+
+      makeChart('overviewReChart', {
+        type: 'bar',
+        data: {
+          labels: segs,
+          datasets: [
+            { label: 'Mumbai', data: segs.map(s => countFor('Mumbai', s)), backgroundColor: c.rose, borderRadius: 6 },
+            { label: 'Thane', data: segs.map(s => countFor('Thane', s)), backgroundColor: c.green, borderRadius: 6 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: c.text } } },
+          scales: {
+            x: { ticks: { color: c.text }, grid: { display: false } },
+            y: { ticks: { color: c.text }, grid: { color: c.grid } }
+          }
+        }
+      });
+    }
+
+    // ---------------- TAB 2: CENSUS EXPLORER ----------------
+    let eduMode = 'grouped', capDim = 'age', capMet = 'rate';
+
+    document.querySelectorAll('#eduToggle .chip-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#eduToggle .chip-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        eduMode = btn.dataset.mode;
+        renderCensusEdu();
+      });
+    });
+
+    document.querySelectorAll('[data-capdim]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-capdim]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        capDim = btn.dataset.capdim;
+        renderCensusCap();
+      });
+    });
+
+    document.querySelectorAll('[data-capmet]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-capmet]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        capMet = btn.dataset.capmet;
+        renderCensusCap();
+      });
+    });
+
+    function renderCensusEdu() {
+      const c = getThemeColors();
+      const src = eduMode === 'grouped' ? D.census.grouped_education : D.census.raw_education;
+      makeChart('censusEduChart', {
+        type: 'bar',
+        data: {
+          labels: src.map(x => x.label),
+          datasets: [{
+            label: 'Individuals',
+            data: src.map(x => x.count),
+            backgroundColor: eduMode === 'grouped' ? c.green : c.accent,
+            borderRadius: 5,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: c.text, maxRotation: 40 }, grid: { display: false } },
+            y: { ticks: { color: c.text }, grid: { color: c.grid } }
+          }
+        }
+      });
+    }
+
+    function renderCensusCap() {
+      const c = getThemeColors();
+      const src = capDim === 'age' ? D.census.capital_by_age : D.census.capital_by_hours;
+      const isRate = capMet === 'rate';
+      makeChart('censusCapChart', {
+        type: 'bar',
+        data: {
+          labels: src.map(x => x.group.replace(/ \(.+\)/, '')),
+          datasets: [{
+            label: isRate ? 'Capital Activity Rate (%)' : 'Mean Net Capital ($)',
+            data: src.map(x => isRate ? x.activity_rate_pct : x.mean_net_capital),
+            backgroundColor: isRate ? c.accent : c.amber,
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: c.text, maxRotation: 30 }, grid: { display: false } },
+            y: {
+              ticks: {
+                color: c.text,
+                callback: v => isRate ? v + '%' : '$' + v.toLocaleString()
+              },
+              grid: { color: c.grid }
+            }
+          }
+        }
+      });
+    }
+
+    function renderHeatmap() {
+      const m = D.census.age_hours_matrix;
+      let html = '<table class="heatmap"><thead><tr><th class="row-h">Age Group</th>';
+      m.hours_labels.forEach(h => { html += `<th>${h}</th>`; });
+      html += '</tr></thead><tbody>';
+      m.age_labels.forEach((ag, i) => {
+        html += `<tr><th class="row-h">${ag}</th>`;
+        m.proportions[i].forEach((pct, j) => {
+          const alpha = Math.max(0.08, Math.min(0.88, pct / 85));
+          const fg = pct > 42 ? '#0b1120' : 'inherit';
+          const cnt = m.counts[i][j].toLocaleString();
+          html += `<td style="background:rgba(56,189,248,${alpha.toFixed(2)});color:${fg};" title="${ag} × ${m.hours_labels[j]}: ${cnt} people (${pct}%)">${pct.toFixed(1)}%</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('ageHoursHeatmap').innerHTML = html;
+    }
+
+    // ---------------- TAB 3: REAL ESTATE EXPLORER ----------------
+    const fCity = document.getElementById('fCity');
+    const fSeg = document.getElementById('fSeg');
+    const fLoc = document.getElementById('fLoc');
+    const fPoss = document.getElementById('fPoss');
+
+    function updateRealEstateLive() {
+      const city = fCity.value, seg = fSeg.value, loc = fLoc.value, poss = fPoss.value;
+      const buckets = D.realestate.cube.filter(b =>
+        (city === 'All' || b.city === city) &&
+        (seg === 'All' || b.seg === seg) &&
+        (loc === 'All' || b.loc === loc) &&
+        (poss === 'All' || b.poss === poss)
+      );
+
+      const tot = buckets.reduce((s, b) => s + b.count, 0);
+      const pSum = buckets.reduce((s, b) => s + b.price_sum, 0);
+      const pN = buckets.reduce((s, b) => s + b.price_n, 0);
+      const cSum = buckets.reduce((s, b) => s + b.carpet_sum, 0);
+      const cN = buckets.reduce((s, b) => s + b.carpet_n, 0);
+      const sSum = buckets.reduce((s, b) => s + b.sqft_sum, 0);
+      const sN = buckets.reduce((s, b) => s + b.sqft_n, 0);
+      const vSum = buckets.reduce((s, b) => s + b.val_sum, 0);
+      const vN = buckets.reduce((s, b) => s + b.val_n, 0);
+
+      const avgPriceL = pN ? (pSum / pN / 100000).toFixed(1) : 'N/A';
+      const avgSqft = sN ? Math.round(sSum / sN).toLocaleString() : 'N/A';
+      const avgCarpet = cN ? Math.round(cSum / cN).toLocaleString() : 'N/A';
+      const avgVal = vN ? (vSum / vN).toFixed(2) : 'N/A';
+
+      document.getElementById('reLiveKpis').innerHTML = `
+        <div class="kpi"><div class="kpi-label">Matching Listings</div><div class="kpi-val">${tot.toLocaleString()}</div><div class="kpi-sub">of ${D.realestate.total_listings.toLocaleString()} total</div></div>
+        <div class="kpi"><div class="kpi-label">Avg Property Price</div><div class="kpi-val green">&#8377;${avgPriceL} L</div><div class="kpi-sub">Filtered market mean</div></div>
+        <div class="kpi"><div class="kpi-label">Avg Price / sq ft</div><div class="kpi-val amber">&#8377;${avgSqft}</div><div class="kpi-sub">Size-normalized pricing</div></div>
+        <div class="kpi"><div class="kpi-label">Avg Carpet Area</div><div class="kpi-val">${avgCarpet} sq ft</div><div class="kpi-sub">Usable interior space</div></div>
+        <div class="kpi"><div class="kpi-label">Avg Value Score</div><div class="kpi-val green">${avgVal}</div><div class="kpi-sub">sq ft per &#8377; Lakh</div></div>
+      `;
+
+      const amNames = ['Swimming Pool', 'Gymnasium', 'Club House', 'Security', 'Lift', 'Parking', 'Power Back Up', 'Water Storage'];
+      const amPcts = amNames.map(a => {
+        const cnt = buckets.reduce((s, b) => s + (b.am[a] || 0), 0);
+        return tot ? +(cnt / tot * 100).toFixed(1) : 0;
+      });
+      const c = getThemeColors();
+      makeChart('reAmenityAvailChart', {
+        type: 'bar',
+        data: {
+          labels: amNames,
+          datasets: [{
+            label: 'Availability (%)',
+            data: amPcts,
+            backgroundColor: c.accent,
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { max: 100, ticks: { color: c.text, callback: v => v + '%' }, grid: { color: c.grid } },
+            y: { ticks: { color: c.text }, grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    [fCity, fSeg, fLoc, fPoss].forEach(el => el.addEventListener('change', updateRealEstateLive));
+    document.getElementById('resetFilters').addEventListener('click', () => {
+      fCity.value = 'All'; fSeg.value = 'All'; fLoc.value = 'All'; fPoss.value = 'All';
+      updateRealEstateLive();
+    });
+
+    let impactCity = 'All', areaCity = 'All';
+    document.querySelectorAll('#impactCityToggle .chip-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#impactCityToggle .chip-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        impactCity = btn.dataset.icity;
+        renderAmenityImpact();
+      });
+    });
+
+    function renderAmenityImpact() {
+      const c = getThemeColors();
+      const obj = D.realestate.amenity_impacts[impactCity];
+      const entries = Object.entries(obj).sort((a, b) => b[1] - a[1]);
+      makeChart('reAmenityImpactChart', {
+        type: 'bar',
+        data: {
+          labels: entries.map(e => e[0]),
+          datasets: [{
+            label: 'Controlled Price/sq ft Impact (%)',
+            data: entries.map(e => e[1]),
+            backgroundColor: entries.map(e => e[1] >= 0 ? c.green : c.rose),
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: c.text, callback: v => (v > 0 ? '+' : '') + v + '%' }, grid: { color: c.grid } },
+            y: { ticks: { color: c.text }, grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    document.querySelectorAll('#areaCityToggle .chip-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#areaCityToggle .chip-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        areaCity = btn.dataset.acity;
+        renderTopAreas();
+      });
+    });
+
+    function renderTopAreas() {
+      const c = getThemeColors();
+      const list = D.realestate.top_areas
+        .filter(a => areaCity === 'All' || a.city === areaCity)
+        .slice(0, 10);
+      makeChart('reTopAreasChart', {
+        type: 'bar',
+        data: {
+          labels: list.map(a => `${a.area} (${a.city})`),
+          datasets: [{
+            label: 'Avg Value Score (sq ft / ₹ Lakh)',
+            data: list.map(a => a.avg_value_score),
+            backgroundColor: list.map(a => a.city === 'Thane' ? c.green : c.accent),
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                afterLabel: ctx => {
+                  const a = list[ctx.dataIndex];
+                  return `Avg Price: ₹${a.avg_price_lakhs}L · Avg Area: ${a.avg_carpet_sqft} sq ft (${a.count} listings)`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { ticks: { color: c.text, maxRotation: 30 }, grid: { display: false } },
+            y: { ticks: { color: c.text }, grid: { color: c.grid } }
+          }
+        }
+      });
+    }
+
+    // Developer Table
+    let devSort = { key: 'count', dir: -1 };
+    function renderDevTable() {
+      const q = document.getElementById('devSearch').value.trim().toLowerCase();
+      const tier = document.getElementById('devTier').value;
+      const rows = D.realestate.developers
+        .filter(d => (tier === 'All' || d.tier === tier) && (!q || d.name.toLowerCase().includes(q)))
+        .sort((a, b) => {
+          const av = a[devSort.key], bv = b[devSort.key];
+          if (typeof av === 'string') return av.localeCompare(bv) * devSort.dir;
+          return (av - bv) * devSort.dir;
+        });
+
+      document.getElementById('devTableBody').innerHTML = rows.map(d => `
+        <tr>
+          <td><strong>${d.name}</strong><div style="font-size:0.75rem;color:var(--muted);">${d.cities.join(', ')}</div></td>
+          <td><span class="tier-badge tier-${d.tier}">${d.tier}</span></td>
+          <td>${d.count}</td>
+          <td>&#8377;${d.avg_price_lakhs.toLocaleString()} L</td>
+          <td>&#8377;${d.avg_sqft_price.toLocaleString()}</td>
+          <td>${d.avg_carpet_sqft.toLocaleString()}</td>
+          <td>${d.price_cv_pct}%</td>
+          <td>${d.pool_pct}%</td>
+          <td>${d.gym_pct}%</td>
+        </tr>
+      `).join('');
+    }
+    document.getElementById('devSearch').addEventListener('input', renderDevTable);
+    document.getElementById('devTier').addEventListener('change', renderDevTable);
+    document.querySelectorAll('table.data-table th').forEach(th => {
+      th.addEventListener('click', () => {
+        const k = th.dataset.sort;
+        if (devSort.key === k) devSort.dir *= -1;
+        else { devSort.key = k; devSort.dir = k === 'name' || k === 'tier' ? 1 : -1; }
+        renderDevTable();
+      });
+    });
+
+    // ---------------- TAB 4: GALLERY ----------------
+    const galleryItems = [
+      { cat: 'census', src: 'figures/census_01_raw_education.png', cap: 'Raw Adult Census education frequencies across 17 levels.' },
+      { cat: 'census', src: 'figures/census_02_grouped_education.png', cap: 'Consolidated 6-tier education attainment hierarchy.' },
+      { cat: 'census', src: 'figures/census_03_age_hours_distributions.png', cap: 'Age and weekly work hours distributions with KDE.' },
+      { cat: 'census', src: 'figures/census_04_age_vs_hours_lowess.png', cap: 'Non-linear life-cycle curve of Age vs. Weekly Work Hours (LOWESS).' },
+      { cat: 'census', src: 'figures/census_06_age_hours_heatmap.png', cap: 'Proportion of work intensity tiers within each age group.' },
+      { cat: 'census', src: 'figures/census_08_capital_activity_comparison.png', cap: 'Capital participation and mean net capital across age & work intensity.' },
+      { cat: 'realestate', src: 'figures/realestate_01_price_segmentation.png', cap: 'Quantile-based price segmentation across Mumbai & Thane.' },
+      { cat: 'realestate', src: 'figures/realestate_02_city_comparison.png', cap: 'Property type mix, average price, and carpet area: Mumbai vs. Thane.' },
+      { cat: 'realestate', src: 'figures/realestate_04_prime_amenities_breakdown.png', cap: 'Prime vs. Non-Prime amenity availability comparison.' },
+      { cat: 'realestate', src: 'figures/realestate_05_value_for_money.png', cap: 'Value Score distribution by city, top areas, and property type.' },
+      { cat: 'realestate', src: 'figures/realestate_06_amenity_price_impact.png', cap: 'Size-controlled amenity impact on price per sq ft vs. absolute price.' },
+      { cat: 'realestate', src: 'figures/realestate_08_developer_analysis.png', cap: 'Top developers by volume, tier breakdown, and pricing consistency (CV%).' },
+    ];
+
+    function renderGallery(filter = 'all') {
+      const list = filter === 'all' ? galleryItems : galleryItems.filter(g => g.cat === filter);
+      document.getElementById('galleryGrid').innerHTML = list.map(g => `
+        <figure>
+          <img src="${g.src}" alt="${g.cap}" loading="lazy" />
+          <figcaption>${g.cap}</figcaption>
+        </figure>
+      `).join('');
+    }
+    document.querySelectorAll('#galleryToggle .chip-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#galleryToggle .chip-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderGallery(btn.dataset.gcat);
+      });
+    });
+
+    function renderAllCharts() {
+      renderOverviewCharts();
+      renderCensusEdu();
+      renderCensusCap();
+      updateRealEstateLive();
+      renderAmenityImpact();
+      renderTopAreas();
+    }
+
+    // Initial render
+    renderHeatmap();
+    renderDevTable();
+    renderGallery('all');
+    renderAllCharts();
   </script>
 </body>
 </html>
