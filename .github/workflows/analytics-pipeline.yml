@@ -1,0 +1,76 @@
+name: Analytics Pipeline & Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      module:
+        description: "Analytical module to run"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - census
+          - realestate
+
+jobs:
+  run-analytics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: pytest -v
+
+      - name: Execute modular analytics pipeline
+        run: |
+          MODULE="${{ github.event.inputs.module || 'all' }}"
+          python scripts/run_pipeline.py --module "$MODULE" --output-dir outputs
+
+      - name: Publish run summary to GitHub Actions Step Summary
+        run: |
+          python - << 'EOF'
+          import json, os
+          with open("outputs/analytics_summary.json") as f:
+              data = json.load(f)
+          summary_path = os.environ["GITHUB_STEP_SUMMARY"]
+          with open(summary_path, "a") as out:
+              out.write("## Analytics Pipeline Execution Summary\n\n")
+              if "census" in data:
+                  c = data["census"]
+                  out.write("### Adult Census Socio-Economic Module\n")
+                  out.write(f"- **Records Analyzed:** {c['dataset_shape']['rows']:,}\n")
+                  out.write(f"- **Age vs. Work Intensity Cramér's V:** {c['age_work_intensity']['cramers_v']}\n")
+                  out.write(f"- **Capital Activity Rate:** {c['capital_activity']['overall_activity_rate_pct']}%\n")
+                  out.write(f"- **Stronger Capital Driver (Logit):** {c['capital_activity']['logit_standardized_coefficients']['stronger_driver']}\n\n")
+              if "realestate" in data:
+                  r = data["realestate"]
+                  out.write("### Mumbai & Thane Real Estate Module\n")
+                  out.write(f"- **Properties Analyzed:** {r['total_properties_analyzed']:,}\n")
+                  out.write(f"- **Thane Price/sq ft Advantage:** {r['city_comparison']['thane_sqft_cost_advantage_pct']}%\n")
+                  out.write(f"- **Mumbai Prime Location Premium (sq ft):** {r['location_premium']['Mumbai']['sqft_price_premium_pct']}%\n")
+                  out.write(f"- **Thane Prime Location Premium (sq ft):** {r['location_premium']['Thane']['sqft_price_premium_pct']}%\n")
+          EOF
+
+      - name: Upload generated reports and figures
+        uses: actions/upload-artifact@v4
+        with:
+          name: analytics-outputs
+          path: outputs/
+          retention-days: 30

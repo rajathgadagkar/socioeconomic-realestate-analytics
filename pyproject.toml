@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "socioeconomic-realestate-analytics"
+version = "1.0.0"
+description = "Modular Python analytics pipeline bridging Adult Census socio-economic patterns with Mumbai & Thane real estate investment intelligence."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [
+    { name = "Rajath Gadagkar", email = "rajathgadagkar@gmail.com" }
+]
+keywords = [
+    "data-analytics",
+    "exploratory-data-analysis",
+    "real-estate-analytics",
+    "census-data",
+    "statistical-modeling",
+    "pandas",
+    "data-visualization",
+]
+dependencies = [
+    "pandas>=2.1.0",
+    "numpy>=1.26.0",
+    "matplotlib>=3.8.0",
+    "seaborn>=0.13.0",
+    "scipy>=1.11.0",
+    "statsmodels>=0.14.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0", "jupyter>=1.0.0"]
+
+[project.scripts]
+run-analytics = "analytics.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
